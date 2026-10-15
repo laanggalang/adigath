@@ -1,36 +1,74 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Adigath — Web Katalog & Marketplace
 
-## Getting Started
+Katalog + marketplace simple untuk brand fashion **Adigath**.
+Stack: Next.js 14 (App Router) · Tailwind CSS · Supabase · TypeScript · shadcn/ui
 
-First, run the development server:
+## Fitur
+
+- **Storefront**: Home, Katalog (filter kategori + search), Detail Produk (varian warna, size, stok), Keranjang (localStorage), Checkout via WhatsApp
+- **Admin** (`/admin`): Login, CRUD Produk + upload foto, Kelola Kategori, Pengaturan Toko (nomor WA dll)
+- **Mode dummy**: Tanpa konfigurasi Supabase, situs jalan dengan 16 produk dummy
+
+## Menjalankan Locally
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Buka http://localhost:3000
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Setup Supabase (aktifkan mode beneran)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. Buat akun di [supabase.com](https://supabase.com) → **New Project**
+2. Buka **SQL Editor** → paste isi `supabase/schema.sql` → Run
+   (ini bikin tabel, RLS policies, storage bucket, dan seed kategori)
+3. Copy `.env.example` jadi `.env.local`, isi:
+   ```
+   NEXT_PUBLIC_SUPABASE_URL=https://xxxx.supabase.co
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...
+   ```
+   (Ambil dari **Settings → API** di dashboard Supabase)
+4. Restart dev server
+5. Buat user admin: **Authentication → Users → Add user** (email + password)
 
-## Learn More
+## Deploy ke Vercel
 
-To learn more about Next.js, take a look at the following resources:
+1. Push repo ke GitHub
+2. [vercel.com](https://vercel.com) → **Import** repo
+3. Tambahkan env variables yang sama (NEXT_PUBLIC_SUPABASE_URL & ANON_KEY)
+4. Deploy → dapat domain `adigath.vercel.app` gratis
+5. (Opsional) Beli domain sendiri → **Settings → Domains**
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Struktur
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```
+src/
+  app/
+    page.tsx              → Home
+    katalog/              → Katalog + filter + search
+    produk/[slug]/        → Detail produk
+    keranjang/            → Keranjang + checkout WA
+    admin/                → Dashboard (login-protected)
+  components/             → Navbar, ProductCard, forms, ui/
+  lib/
+    data.ts               → Dummy data 16 produk
+    queries.ts            → Fetch Supabase (fallback ke dummy)
+    cart.ts               → Cart store (zustand + localStorage)
+    wa.ts                 → Generator link WhatsApp
+    types.ts              → Tipe data
+supabase/schema.sql       → Skema DB + RLS + storage
+```
 
-## Deploy on Vercel
+## Migrasi Dummy Data ke Supabase (opsional)
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Untuk mengisi produk awal dari data dummy ke database Supabase:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+# butuh SUPABASE_SERVICE_ROLE_KEY (Settings -> API -> service_role, JANGAN di-commit)
+export SUPABASE_SERVICE_ROLE_KEY=eyJ...
+export $(grep -v '^#' .env.local | xargs)
+npx tsx scripts/migrate-dummy.ts
+```
+
+Atau tambahkan produk langsung lewat dashboard admin.
